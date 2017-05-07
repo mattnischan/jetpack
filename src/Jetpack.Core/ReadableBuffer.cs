@@ -42,7 +42,7 @@ namespace Jetpack.Core
         public bool ReadValue(out bool value)
         {
             var newPos = _currentIndex + 1;
-            if (newPos < _bufferSize)
+            if (newPos <= _bufferSize)
             {
                 value = *(bool*)_bufferPtr;
                 _bufferPtr += 1;
@@ -58,7 +58,7 @@ namespace Jetpack.Core
         public bool ReadValue(out byte value)
         {
             var newPos = _currentIndex + 1;
-            if (newPos < _bufferSize)
+            if (newPos <= _bufferSize)
             {
                 value = *_bufferPtr;
                 _bufferPtr += 1;
@@ -74,7 +74,7 @@ namespace Jetpack.Core
         public bool ReadValue(out sbyte value)
         {
             var newPos = _currentIndex + 1;
-            if (newPos < _bufferSize)
+            if (newPos <= _bufferSize)
             {
                 value = *(sbyte*)_bufferPtr;
                 _bufferPtr += 1;
@@ -90,7 +90,7 @@ namespace Jetpack.Core
         public bool ReadValue(out char value)
         {
             var newPos = _currentIndex + 2;
-            if (newPos < _bufferSize)
+            if (newPos <= _bufferSize)
             {
                 value = *(char*)_bufferPtr;
                 _bufferPtr += 2;
@@ -106,7 +106,7 @@ namespace Jetpack.Core
         public bool ReadValue(out decimal value)
         {
             var newPos = _currentIndex + 16;
-            if (newPos < _bufferSize)
+            if (newPos <= _bufferSize)
             {
                 value = *(decimal*)_bufferPtr;
                 _bufferPtr += 16;
@@ -122,7 +122,7 @@ namespace Jetpack.Core
         public bool ReadValue(out double value)
         {
             var newPos = _currentIndex + 8;
-            if (newPos < _bufferSize)
+            if (newPos <= _bufferSize)
             {
                 value = *(double*)_bufferPtr;
                 _bufferPtr += 8;
@@ -138,7 +138,7 @@ namespace Jetpack.Core
         public bool ReadValue(out float value)
         {
             var newPos = _currentIndex + 4;
-            if (newPos < _bufferSize)
+            if (newPos <= _bufferSize)
             {
                 value = *(float*)_bufferPtr;
                 _bufferPtr += 4;
@@ -154,7 +154,7 @@ namespace Jetpack.Core
         public bool ReadValue(out int value)
         {
             var newPos = _currentIndex + 4;
-            if (newPos < _bufferSize)
+            if (newPos <= _bufferSize)
             {
                 value = *(int*)_bufferPtr;
                 _bufferPtr += 4;
@@ -170,7 +170,7 @@ namespace Jetpack.Core
         public bool ReadValue(out uint value)
         {
             var newPos = _currentIndex + 4;
-            if (newPos < _bufferSize)
+            if (newPos <= _bufferSize)
             {
                 value = *(uint*)_bufferPtr;
                 _bufferPtr += 4;
@@ -186,7 +186,7 @@ namespace Jetpack.Core
         public bool ReadValue(out long value)
         {
             var newPos = _currentIndex + 8;
-            if (newPos < _bufferSize)
+            if (newPos <= _bufferSize)
             {
                 value = *(long*)_bufferPtr;
                 _bufferPtr += 8;
@@ -202,7 +202,7 @@ namespace Jetpack.Core
         public bool ReadValue(out ulong value)
         {
             var newPos = _currentIndex + 8;
-            if (newPos < _bufferSize)
+            if (newPos <= _bufferSize)
             {
                 value = *(ulong*)_bufferPtr;
                 _bufferPtr += 8;
@@ -218,7 +218,7 @@ namespace Jetpack.Core
         public bool ReadValue(out short value)
         {
             var newPos = _currentIndex + 2;
-            if (newPos < _bufferSize)
+            if (newPos <= _bufferSize)
             {
                 value = *(short*)_bufferPtr;
                 _bufferPtr += 2;
@@ -234,7 +234,7 @@ namespace Jetpack.Core
         public bool ReadValue(out ushort value)
         {
             var newPos = _currentIndex + 2;
-            if (newPos < _bufferSize)
+            if (newPos <= _bufferSize)
             {
                 value = *(ushort*)_bufferPtr;
                 _bufferPtr += 2;
@@ -254,7 +254,7 @@ namespace Jetpack.Core
                 _decoder = Encoding.UTF8.GetDecoder();
             }
 
-            value = new string(' ', length);
+            value = new string(default(char), length);
             fixed(char* charPtr = value)
             {
                 _decoder.Convert(_bufferPtr, (_bufferSize - 1) - _currentIndex, charPtr, value.Length, false, out var bytesUsed, out var charsUsed, out var completed);

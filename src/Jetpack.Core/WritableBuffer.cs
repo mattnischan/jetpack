@@ -42,7 +42,7 @@ namespace Jetpack.Core
         public bool WriteValue(bool value)
         {
             var newPos = _currentIndex + 1;
-            if (newPos < _bufferSize)
+            if (newPos <= _bufferSize)
             {
                 *(bool*)_bufferPtr = value;
                 _bufferPtr += 1;
@@ -57,7 +57,7 @@ namespace Jetpack.Core
         public bool WriteValue(byte value)
         {
             var newPos = _currentIndex + 1;
-            if(newPos < _bufferSize)
+            if(newPos <= _bufferSize)
             {
                 *_bufferPtr = value;
                 _bufferPtr += 1;
@@ -72,7 +72,7 @@ namespace Jetpack.Core
         public bool WriteValue(sbyte value)
         {
             var newPos = _currentIndex + 1;
-            if (newPos < _bufferSize)
+            if (newPos <= _bufferSize)
             {
                 *(sbyte*)_bufferPtr = value;
                 _bufferPtr += 1;
@@ -87,11 +87,11 @@ namespace Jetpack.Core
         public bool WriteValue(char value)
         {
             var newPos = _currentIndex + 2;
-            if (newPos < _bufferSize)
+            if (newPos <= _bufferSize)
             {
                 *(char*)_bufferPtr = value;
                 _bufferPtr += 2;
-                _currentIndex += 1;
+                _currentIndex += 2;
 
                 return true;
             }
@@ -102,11 +102,11 @@ namespace Jetpack.Core
         public bool WriteValue(decimal value)
         {
             var newPos = _currentIndex + 16;
-            if (newPos < _bufferSize)
+            if (newPos <= _bufferSize)
             {
                 *(decimal*)_bufferPtr = value;
                 _bufferPtr += 16;
-                _currentIndex += 1;
+                _currentIndex += 16;
 
                 return true;
             }
@@ -117,11 +117,11 @@ namespace Jetpack.Core
         public bool WriteValue(double value)
         {
             var newPos = _currentIndex + 8;
-            if (newPos < _bufferSize)
+            if (newPos <= _bufferSize)
             {
                 *(double*)_bufferPtr = value;
                 _bufferPtr += 8;
-                _currentIndex += 1;
+                _currentIndex += 8;
 
                 return true;
             }
@@ -132,11 +132,11 @@ namespace Jetpack.Core
         public bool WriteValue(float value)
         {
             var newPos = _currentIndex + 4;
-            if (newPos < _bufferSize)
+            if (newPos <= _bufferSize)
             {
                 *(float*)_bufferPtr = value;
                 _bufferPtr += 4;
-                _currentIndex += 1;
+                _currentIndex += 4;
 
                 return true;
             }
@@ -147,11 +147,11 @@ namespace Jetpack.Core
         public bool WriteValue(int value)
         {
             var newPos = _currentIndex + 4;
-            if (newPos < _bufferSize)
+            if (newPos <= _bufferSize)
             {
                 *(int*)_bufferPtr = value;
                 _bufferPtr += 4;
-                _currentIndex += 1;
+                _currentIndex += 4;
 
                 return true;
             }
@@ -162,11 +162,11 @@ namespace Jetpack.Core
         public bool WriteValue(uint value)
         {
             var newPos = _currentIndex + 4;
-            if (newPos < _bufferSize)
+            if (newPos <= _bufferSize)
             {
                 *(uint*)_bufferPtr = value;
                 _bufferPtr += 4;
-                _currentIndex += 1;
+                _currentIndex += 4;
 
                 return true;
             }
@@ -177,11 +177,11 @@ namespace Jetpack.Core
         public bool WriteValue(long value)
         {
             var newPos = _currentIndex + 8;
-            if (newPos < _bufferSize)
+            if (newPos <= _bufferSize)
             {
                 *(long*)_bufferPtr = value;
                 _bufferPtr += 8;
-                _currentIndex += 1;
+                _currentIndex += 8;
 
                 return true;
             }
@@ -192,11 +192,11 @@ namespace Jetpack.Core
         public bool WriteValue(ulong value)
         {
             var newPos = _currentIndex + 8;
-            if (newPos < _bufferSize)
+            if (newPos <= _bufferSize)
             {
                 *(ulong*)_bufferPtr = value;
                 _bufferPtr += 8;
-                _currentIndex += 1;
+                _currentIndex += 8;
 
                 return true;
             }
@@ -207,11 +207,11 @@ namespace Jetpack.Core
         public bool WriteValue(short value)
         {
             var newPos = _currentIndex + 2;
-            if (newPos < _bufferSize)
+            if (newPos <= _bufferSize)
             {
                 *(short*)_bufferPtr = value;
                 _bufferPtr += 2;
-                _currentIndex += 1;
+                _currentIndex += 2;
 
                 return true;
             }
@@ -222,11 +222,11 @@ namespace Jetpack.Core
         public bool WriteValue(ushort value)
         {
             var newPos = _currentIndex + 2;
-            if (newPos < _bufferSize)
+            if (newPos <= _bufferSize)
             {
                 *(ushort*)_bufferPtr = value;
                 _bufferPtr += 2;
-                _currentIndex += 1;
+                _currentIndex += 2;
 
                 return true;
             }
@@ -234,7 +234,37 @@ namespace Jetpack.Core
             return false;
         }
 
-        public (bool IsWritten, int CharsWritten) WriteValue(string value)
+        public bool WriteValue(DateTime value)
+        {
+            var newPos = _currentIndex + 8;
+            if (newPos <= _bufferSize)
+            {
+                *(long*)_bufferPtr = value.Ticks;
+                _bufferPtr += 8;
+                _currentIndex += 8;
+
+                return true;
+            }
+
+            return false;
+        }
+
+        public bool WriteValue(Guid value)
+        {
+            var newPos = _currentIndex + 16;
+            if (newPos <= _bufferSize)
+            {
+                *(Guid*)_bufferPtr = value;
+                _bufferPtr += 16;
+                _currentIndex += 16;
+
+                return true;
+            }
+
+            return false;
+        }
+
+        public bool  WriteValue(string value, out int charsWritten)
         {
             fixed(char* charPtr = value)
             {
@@ -252,12 +282,13 @@ namespace Jetpack.Core
 
                 _bufferPtr += bytesUsed;
                 _currentIndex += bytesUsed;
+                charsWritten = charsUsed;
 
-                return (completed, charsUsed);
+                return completed;
             }
         }
 
-        public (bool IsWritten, int CharsWritten) WriteValue(string value, int startIndex)
+        public bool WriteValue(string value, int startIndex, out int charsWritten)
         {
             fixed (char* charPtrOrigin = value)
             {
@@ -277,8 +308,9 @@ namespace Jetpack.Core
 
                 _bufferPtr += bytesUsed;
                 _currentIndex += bytesUsed;
+                charsWritten = charsUsed;
 
-                return (completed, charsUsed);
+                return completed;
             }
         }
 
@@ -303,6 +335,12 @@ namespace Jetpack.Core
 
             _handle = default(GCHandle);
             _bufferPtr = buffer;
+            _currentIndex = 0;
+        }
+
+        public void Reset()
+        {
+            _bufferPtr -= _currentIndex;
             _currentIndex = 0;
         }
 

@@ -37,7 +37,7 @@ namespace Jetpack.Tests
         [Fact]
         public void TestString()
         {
-            _wBuf.WriteValue("Hello World!");
+            _wBuf.WriteValue("Hello World!", out var charsWritten);
             _rBuf.ReadValue(out string value, 12);
             Assert.Equal("Hello World!", value);
         }
@@ -48,7 +48,7 @@ namespace Jetpack.Tests
             var buf = new byte[128];
             var writer = new WritableBuffer(buf);
 
-            writer.WriteValue("Hello World! Hello World!");
+            writer.WriteValue("Hello World! Hello World!", out var charsWritten);
 
             var newBuf = new byte[1];
             Array.Copy(buf, newBuf, 1);
