@@ -36,15 +36,11 @@ namespace Jetpack.Tests
 
         private byte[] _buffer;
         private MemoryStream _stream;
-        private WritableBuffer _wBuf;
-        private Action<WritableBuffer, JetpackSession, Poco> _serializer;
 
         public Benchmarks()
         {
             _buffer = new byte[1024];
             _stream = new MemoryStream(_buffer);
-            _wBuf = new WritableBuffer(_buffer);
-            _serializer = SerializerCompiler.BuildAlphaSerializer<Poco>();
         }
         
         [Benchmark(Baseline = true)]
@@ -57,8 +53,8 @@ namespace Jetpack.Tests
         [Benchmark]
         public void SerializeJetpack()
         {
-            _serializer(_wBuf, new JetpackSession { GetBuffer = () => new byte[1024] }, _poco);
-            _wBuf.Reset();
+            JetpackSerializer.Serialize(_stream, _poco);
+            _stream.Seek(0, SeekOrigin.Begin);
         }
 
         [Fact]

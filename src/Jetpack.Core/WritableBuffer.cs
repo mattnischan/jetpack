@@ -12,11 +12,13 @@ namespace Jetpack.Core
     /// <remarks>
     /// This class is not guaranteed to be concurrency-safe.
     /// </remarks>
-    public unsafe class WritableBuffer : IDisposable
+    public unsafe struct WritableBuffer : IDisposable
     {
         private int _bufferSize;
 
         private byte* _bufferPtr;
+
+        private byte[] _buffer;
 
         private GCHandle _handle;
 
@@ -26,245 +28,305 @@ namespace Jetpack.Core
 
         private Encoder _encoder;
 
-        public WritableBuffer(byte[] buffer)
+        private Func<byte[]> _allocate;
+        private Action<byte[]> _flush;
+
+        public WritableBuffer(byte[] buffer, Func<byte[]> allocate, Action<byte[]> flush)
         {
+            _buffer = buffer;
             _bufferSize = buffer.Length;
+
             _handle = GCHandle.Alloc(buffer, GCHandleType.Pinned);
             _bufferPtr = (byte*)_handle.AddrOfPinnedObject().ToPointer();
+
+            _allocate = allocate;
+            _flush = flush;
+
+            _encoder = null;
+            isDisposed = false;
+            _currentIndex = 0;
         }
 
-        public WritableBuffer(byte* buffer, int size)
+        private void Allocate()
         {
-            _bufferPtr = buffer;
-            _bufferSize = size;
+            var newBuffer = _allocate();
+            Array.Copy(_buffer, _currentIndex, newBuffer, 0, _bufferSize - _currentIndex);
+
+            var oldBuffer = _buffer;
+            Reset(newBuffer);
+            _flush(_buffer);
         }
 
-        public bool WriteValue(bool value)
+        public void WriteValue(bool value)
         {
-            var newPos = _currentIndex + 1;
-            if (newPos <= _bufferSize)
+            while (true)
             {
-                *(bool*)_bufferPtr = value;
-                _bufferPtr += 1;
-                _currentIndex += 1;
-
-                return true;
+                var newPos = _currentIndex + 1;
+                if (newPos <= _bufferSize)
+                {
+                    *(bool*)_bufferPtr = value;
+                    _bufferPtr += 1;
+                    _currentIndex += 1;
+                    break;
+                }
+                Allocate();
             }
-
-            return false;
         }
 
-        public bool WriteValue(byte value)
+        public void WriteValue(byte value)
         {
-            var newPos = _currentIndex + 1;
-            if(newPos <= _bufferSize)
+            while (true)
             {
-                *_bufferPtr = value;
-                _bufferPtr += 1;
-                _currentIndex += 1;
+                var newPos = _currentIndex + 1;
+                if (newPos <= _bufferSize)
+                {
+                    *_bufferPtr = value;
+                    _bufferPtr += 1;
+                    _currentIndex += 1;
 
-                return true;
+                    break;
+                }
+                Allocate();
             }
-
-            return false;
         }
 
-        public bool WriteValue(sbyte value)
+        public void WriteValue(sbyte value)
         {
-            var newPos = _currentIndex + 1;
-            if (newPos <= _bufferSize)
+            while (true)
             {
-                *(sbyte*)_bufferPtr = value;
-                _bufferPtr += 1;
-                _currentIndex += 1;
+                var newPos = _currentIndex + 1;
+                if (newPos <= _bufferSize)
+                {
+                    *(sbyte*)_bufferPtr = value;
+                    _bufferPtr += 1;
+                    _currentIndex += 1;
 
-                return true;
+                    break;
+                }
+                Allocate();
             }
-
-            return false;
         }
 
-        public bool WriteValue(char value)
+        public void WriteValue(char value)
         {
-            var newPos = _currentIndex + 2;
-            if (newPos <= _bufferSize)
+            while (true)
             {
-                *(char*)_bufferPtr = value;
-                _bufferPtr += 2;
-                _currentIndex += 2;
+                var newPos = _currentIndex + 2;
+                if (newPos <= _bufferSize)
+                {
+                    *(char*)_bufferPtr = value;
+                    _bufferPtr += 2;
+                    _currentIndex += 2;
 
-                return true;
+                    break;
+                }
+                Allocate();
             }
-
-            return false;
         }
 
-        public bool WriteValue(decimal value)
+        public void WriteValue(decimal value)
         {
-            var newPos = _currentIndex + 16;
-            if (newPos <= _bufferSize)
+            while (true)
             {
-                *(decimal*)_bufferPtr = value;
-                _bufferPtr += 16;
-                _currentIndex += 16;
+                var newPos = _currentIndex + 16;
+                if (newPos <= _bufferSize)
+                {
+                    *(decimal*)_bufferPtr = value;
+                    _bufferPtr += 16;
+                    _currentIndex += 16;
 
-                return true;
+                    break;
+                }
+                Allocate();
             }
-
-            return false;
         }
 
-        public bool WriteValue(double value)
+        public void WriteValue(double value)
         {
-            var newPos = _currentIndex + 8;
-            if (newPos <= _bufferSize)
+            while (true)
             {
-                *(double*)_bufferPtr = value;
-                _bufferPtr += 8;
-                _currentIndex += 8;
+                var newPos = _currentIndex + 8;
+                if (newPos <= _bufferSize)
+                {
+                    *(double*)_bufferPtr = value;
+                    _bufferPtr += 8;
+                    _currentIndex += 8;
 
-                return true;
+                    break;
+                }
+                Allocate();
             }
-
-            return false;
         }
 
-        public bool WriteValue(float value)
+        public void WriteValue(float value)
         {
-            var newPos = _currentIndex + 4;
-            if (newPos <= _bufferSize)
+            while (true)
             {
-                *(float*)_bufferPtr = value;
-                _bufferPtr += 4;
-                _currentIndex += 4;
+                var newPos = _currentIndex + 4;
+                if (newPos <= _bufferSize)
+                {
+                    *(float*)_bufferPtr = value;
+                    _bufferPtr += 4;
+                    _currentIndex += 4;
 
-                return true;
+                    break;
+                }
+                Allocate();
             }
-
-            return false;
         }
 
-        public bool WriteValue(int value)
+        public void WriteValue(int value)
         {
-            var newPos = _currentIndex + 4;
-            if (newPos <= _bufferSize)
+            while (true)
             {
-                *(int*)_bufferPtr = value;
-                _bufferPtr += 4;
-                _currentIndex += 4;
+                var newPos = _currentIndex + 4;
+                if (newPos <= _bufferSize)
+                {
+                    *(int*)_bufferPtr = value;
+                    _bufferPtr += 4;
+                    _currentIndex += 4;
 
-                return true;
+                    break;
+                }
+                Allocate();
             }
-
-            return false;
         }
 
-        public bool WriteValue(uint value)
+        public void WriteValue(uint value)
         {
-            var newPos = _currentIndex + 4;
-            if (newPos <= _bufferSize)
+            while (true)
             {
-                *(uint*)_bufferPtr = value;
-                _bufferPtr += 4;
-                _currentIndex += 4;
+                var newPos = _currentIndex + 4;
+                if (newPos <= _bufferSize)
+                {
+                    *(uint*)_bufferPtr = value;
+                    _bufferPtr += 4;
+                    _currentIndex += 4;
 
-                return true;
+                    break;
+                }
+                Allocate();
             }
-
-            return false;
         }
 
-        public bool WriteValue(long value)
+        public void WriteValue(long value)
         {
-            var newPos = _currentIndex + 8;
-            if (newPos <= _bufferSize)
+            while (true)
             {
-                *(long*)_bufferPtr = value;
-                _bufferPtr += 8;
-                _currentIndex += 8;
+                var newPos = _currentIndex + 8;
+                if (newPos <= _bufferSize)
+                {
+                    *(long*)_bufferPtr = value;
+                    _bufferPtr += 8;
+                    _currentIndex += 8;
 
-                return true;
+                    break;
+                }
+                Allocate();
             }
-
-            return false;
         }
 
-        public bool WriteValue(ulong value)
+        public void WriteValue(ulong value)
         {
-            var newPos = _currentIndex + 8;
-            if (newPos <= _bufferSize)
+            while (true)
             {
-                *(ulong*)_bufferPtr = value;
-                _bufferPtr += 8;
-                _currentIndex += 8;
+                var newPos = _currentIndex + 8;
+                if (newPos <= _bufferSize)
+                {
+                    *(ulong*)_bufferPtr = value;
+                    _bufferPtr += 8;
+                    _currentIndex += 8;
 
-                return true;
+                    break;
+                }
+                Allocate();
             }
-
-            return false;
         }
 
-        public bool WriteValue(short value)
+        public void WriteValue(short value)
         {
-            var newPos = _currentIndex + 2;
-            if (newPos <= _bufferSize)
+            while (true)
             {
-                *(short*)_bufferPtr = value;
-                _bufferPtr += 2;
-                _currentIndex += 2;
+                var newPos = _currentIndex + 2;
+                if (newPos <= _bufferSize)
+                {
+                    *(short*)_bufferPtr = value;
+                    _bufferPtr += 2;
+                    _currentIndex += 2;
 
-                return true;
+                    break;
+                }
+                Allocate();
             }
-
-            return false;
         }
 
-        public bool WriteValue(ushort value)
+        public void WriteValue(ushort value)
         {
-            var newPos = _currentIndex + 2;
-            if (newPos <= _bufferSize)
+            while (true)
             {
-                *(ushort*)_bufferPtr = value;
-                _bufferPtr += 2;
-                _currentIndex += 2;
+                var newPos = _currentIndex + 2;
+                if (newPos <= _bufferSize)
+                {
+                    *(ushort*)_bufferPtr = value;
+                    _bufferPtr += 2;
+                    _currentIndex += 2;
 
-                return true;
+                    break;
+                }
+                Allocate();
             }
-
-            return false;
         }
 
-        public bool WriteValue(DateTime value)
+        public void WriteValue(DateTime value)
         {
-            var newPos = _currentIndex + 8;
-            if (newPos <= _bufferSize)
+            while (true)
             {
-                *(long*)_bufferPtr = value.Ticks;
-                _bufferPtr += 8;
-                _currentIndex += 8;
+                var newPos = _currentIndex + 8;
+                if (newPos <= _bufferSize)
+                {
+                    *(long*)_bufferPtr = value.Ticks;
+                    _bufferPtr += 8;
+                    _currentIndex += 8;
 
-                return true;
+                    break;
+                }
+                Allocate();
             }
-
-            return false;
         }
 
-        public bool WriteValue(Guid value)
+        public void WriteValue(Guid value)
         {
-            var newPos = _currentIndex + 16;
-            if (newPos <= _bufferSize)
+            while (true)
             {
-                *(Guid*)_bufferPtr = value;
-                _bufferPtr += 16;
-                _currentIndex += 16;
+                var newPos = _currentIndex + 16;
+                if (newPos <= _bufferSize)
+                {
+                    *(Guid*)_bufferPtr = value;
+                    _bufferPtr += 16;
+                    _currentIndex += 16;
 
-                return true;
+                    break;
+                }
+                Allocate();
             }
-
-            return false;
         }
 
-        public bool  WriteValue(string value, out int charsWritten)
+        public void WriteValue(string value)
+        {
+            int index = 0;
+            if(!WriteString(value, out var charsWritten))
+            {
+                var completed = false;
+                do
+                {
+                    Allocate();
+                    completed = WriteString(value, index, out charsWritten);
+                    index += charsWritten;
+                } while (!completed);
+            }
+        }
+
+        private bool WriteString(string value, out int charsWritten)
         {
             fixed(char* charPtr = value)
             {
@@ -288,7 +350,7 @@ namespace Jetpack.Core
             }
         }
 
-        public bool WriteValue(string value, int startIndex, out int charsWritten)
+        private bool WriteString(string value, int startIndex, out int charsWritten)
         {
             fixed (char* charPtrOrigin = value)
             {
@@ -344,7 +406,7 @@ namespace Jetpack.Core
             _currentIndex = 0;
         }
 
-        protected virtual void Dispose(bool disposing)
+        public void Dispose(bool disposing)
         {
             if (!isDisposed)
             {
@@ -352,14 +414,11 @@ namespace Jetpack.Core
                 {
                     _handle.Free();
                 }
+                _flush(_buffer);
                 isDisposed = true;
             }
         }
 
-         ~WritableBuffer()
-        {
-            Dispose(false);
-        }
 
         public void Dispose()
         {

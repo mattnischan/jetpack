@@ -14,7 +14,7 @@ namespace Jetpack.Tests
         public BufferTests()
         {
             var buffer = new byte[16];
-            _wBuf = new WritableBuffer(buffer);
+            _wBuf = new WritableBuffer(buffer, () => new byte[1024], buf => { });
             _rBuf = new ReadableBuffer(buffer);
         }
 
@@ -37,7 +37,7 @@ namespace Jetpack.Tests
         [Fact]
         public void TestString()
         {
-            _wBuf.WriteValue("Hello World!", out var charsWritten);
+            _wBuf.WriteValue("Hello World!");
             _rBuf.ReadValue(out string value, 12);
             Assert.Equal("Hello World!", value);
         }
@@ -46,9 +46,9 @@ namespace Jetpack.Tests
         public void TestStringSplit()
         {
             var buf = new byte[128];
-            var writer = new WritableBuffer(buf);
+            var writer = new WritableBuffer(buf, () => new byte[1024], buff => { });
 
-            writer.WriteValue("Hello World! Hello World!", out var charsWritten);
+            writer.WriteValue("Hello World! Hello World!");
 
             var newBuf = new byte[1];
             Array.Copy(buf, newBuf, 1);
