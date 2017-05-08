@@ -54,10 +54,11 @@ namespace Jetpack.Tests
             _stream.Seek(0, SeekOrigin.Begin);
         }
 
-        [Fact]
+        [Benchmark]
         public void SerializeJetpack()
         {
             _serializer(_wBuf, new JetpackSession { GetBuffer = () => new byte[1024] }, _poco);
+            _wBuf.Reset();
         }
 
         [Fact]

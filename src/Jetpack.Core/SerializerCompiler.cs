@@ -42,11 +42,19 @@ namespace Jetpack.Core
             var fieldSerializers = new List<Expression>();
             foreach(var field in fields)
             {
-                fieldSerializers.Add(WriteValue(writableBuffer, Expression.Constant((byte)TypeManifest[field.FieldType]), typeof(byte)));
-                fieldSerializers.Add(WriteValue(writableBuffer, Expression.Field(item, field), field.FieldType));
+                if (field.FieldType != typeof(string))
+                {
+                    fieldSerializers.Add(WriteValue(writableBuffer, Expression.Constant((byte)TypeManifest[field.FieldType]), typeof(byte)));
+                    fieldSerializers.Add(WriteValue(writableBuffer, Expression.Field(item, field), field.FieldType));
+                }
+                else
+                {
+                    fieldSerializers.Add(WriteValue(writableBuffer, Expression.Constant((byte)TypeManifest[field.FieldType]), typeof(byte)));
+                    fieldSerializers.Add(WriteString(writableBuffer, Expression.Field(item, field)));
+                }
             }
 
-            var expression = Expression.Lambda<Action<WritableBuffer, JetpackSession, T>>(Expression.Block(fieldSerializers), new[] { session, writableBuffer, item });
+            var expression = Expression.Lambda<Action<WritableBuffer, JetpackSession, T>>(Expression.Block(fieldSerializers), new[] { writableBuffer, session, item });
             return expression.Compile();
         }
 
@@ -63,6 +71,44 @@ namespace Jetpack.Core
                 GetBuffer,
                 writeValue
             }));
+        }
+
+        public static Expression WriteString(Expression writableBuffer, Expression field)
+        {
+            var writeStringMethod = typeof(WritableBuffer)
+                .GetRuntimeMethod("WriteValue", new[] { typeof(string), typeof(int).MakeByRefType() });
+
+            var writeStringContMethod = typeof(WritableBuffer)
+                .GetRuntimeMethod("WriteValue", new[] { typeof(string), typeof(int), typeof(int).MakeByRefType() });
+
+            var isCompleted = Expression.Variable(typeof(bool), "isCompleted");
+            var outCharsUsed = Expression.Variable(typeof(int), "outCharsUsed");
+            var charIndex = Expression.Variable(typeof(int), "charsUsed");
+            var breakLabel = Expression.Label("break");
+
+            var expr = Expression.Block(
+                new ParameterExpression[] { isCompleted, outCharsUsed },
+                new Expression[]
+            {
+                Expression.Assign(
+                    isCompleted,
+                    Expression.Call(writableBuffer, writeStringMethod, new[] { field, outCharsUsed })
+                ),
+                Expression.IfThen(Expression.IsTrue(isCompleted),
+                    Expression.Loop(
+                        Expression.IfThenElse(
+                            Expression.NotEqual(
+                                Expression.Call(writableBuffer, writeStringContMethod, new[] { field, outCharsUsed, outCharsUsed }),
+                                Expression.Constant(true)
+                            ),
+                            GetBuffer,
+                            Expression.Goto(breakLabel)
+                        )
+                    , breakLabel)
+                )
+            });
+
+            return expr;
         }
 
         public static Expression<Func<JetpackSession, byte[]>> GetBuffer = (JetpackSession session) => session.GetBuffer();
