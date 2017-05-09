@@ -8,7 +8,10 @@ namespace Jetpack.Core
 {
     public static class JetpackSerializer
     {
-        public static readonly ArrayPool<byte> _pool = ArrayPool<byte>.Shared;
+        public static readonly SerializerPool _serializerPool =
+            new SerializerPool(() => new WritableBuffer(ArrayPool<byte>.Shared.Rent(4096),
+                () => ArrayPool<byte>.Shared.Rent(4096),
+                buffer => ArrayPool<byte>.Shared.Return(buffer)));
 
         private static class Serializer<T>
         {
@@ -17,10 +20,11 @@ namespace Jetpack.Core
 
         public static void Serialize<T>(Stream stream, T value)
         {
-            using (var writer = new WritableBuffer(_pool.Rent(1024), () => _pool.Rent(1024), buf => _pool.Return(buf)))
-            {
-                Serializer<T>.WriteObject(writer, value);
-            }
+            var writer = _serializerPool.Rent();
+            Serializer<T>.WriteObject(writer, value);
+
+            stream.Write(writer.Buffer, 0, writer.CurrentIndex);
+            _serializerPool.Return(writer);
         }
     }
 }

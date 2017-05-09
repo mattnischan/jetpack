@@ -18,11 +18,11 @@ namespace Jetpack.Core
 
         private byte* _bufferPtr;
 
-        private byte[] _buffer;
+        public byte[] Buffer;
 
         private GCHandle _handle;
 
-        private int _currentIndex;
+        public int CurrentIndex;
 
         private bool isDisposed;
 
@@ -33,7 +33,7 @@ namespace Jetpack.Core
 
         public WritableBuffer(byte[] buffer, Func<byte[]> allocate, Action<byte[]> flush)
         {
-            _buffer = buffer;
+            Buffer = buffer;
             _bufferSize = buffer.Length;
 
             _handle = GCHandle.Alloc(buffer, GCHandleType.Pinned);
@@ -44,29 +44,29 @@ namespace Jetpack.Core
 
             _encoder = null;
             isDisposed = false;
-            _currentIndex = 0;
+            CurrentIndex = 0;
         }
 
         private void Allocate()
         {
             var newBuffer = _allocate();
-            Array.Copy(_buffer, _currentIndex, newBuffer, 0, _bufferSize - _currentIndex);
+            Array.Copy(Buffer, CurrentIndex, newBuffer, 0, _bufferSize - CurrentIndex);
 
-            var oldBuffer = _buffer;
+            var oldBuffer = Buffer;
             Reset(newBuffer);
-            _flush(_buffer);
+            _flush(Buffer);
         }
 
         public void WriteValue(bool value)
         {
             while (true)
             {
-                var newPos = _currentIndex + 1;
+                var newPos = CurrentIndex + 1;
                 if (newPos <= _bufferSize)
                 {
                     *(bool*)_bufferPtr = value;
                     _bufferPtr += 1;
-                    _currentIndex += 1;
+                    CurrentIndex += 1;
                     break;
                 }
                 Allocate();
@@ -77,12 +77,12 @@ namespace Jetpack.Core
         {
             while (true)
             {
-                var newPos = _currentIndex + 1;
+                var newPos = CurrentIndex + 1;
                 if (newPos <= _bufferSize)
                 {
                     *_bufferPtr = value;
                     _bufferPtr += 1;
-                    _currentIndex += 1;
+                    CurrentIndex += 1;
 
                     break;
                 }
@@ -94,12 +94,12 @@ namespace Jetpack.Core
         {
             while (true)
             {
-                var newPos = _currentIndex + 1;
+                var newPos = CurrentIndex + 1;
                 if (newPos <= _bufferSize)
                 {
                     *(sbyte*)_bufferPtr = value;
                     _bufferPtr += 1;
-                    _currentIndex += 1;
+                    CurrentIndex += 1;
 
                     break;
                 }
@@ -111,12 +111,12 @@ namespace Jetpack.Core
         {
             while (true)
             {
-                var newPos = _currentIndex + 2;
+                var newPos = CurrentIndex + 2;
                 if (newPos <= _bufferSize)
                 {
                     *(char*)_bufferPtr = value;
                     _bufferPtr += 2;
-                    _currentIndex += 2;
+                    CurrentIndex += 2;
 
                     break;
                 }
@@ -128,12 +128,12 @@ namespace Jetpack.Core
         {
             while (true)
             {
-                var newPos = _currentIndex + 16;
+                var newPos = CurrentIndex + 16;
                 if (newPos <= _bufferSize)
                 {
                     *(decimal*)_bufferPtr = value;
                     _bufferPtr += 16;
-                    _currentIndex += 16;
+                    CurrentIndex += 16;
 
                     break;
                 }
@@ -145,12 +145,12 @@ namespace Jetpack.Core
         {
             while (true)
             {
-                var newPos = _currentIndex + 8;
+                var newPos = CurrentIndex + 8;
                 if (newPos <= _bufferSize)
                 {
                     *(double*)_bufferPtr = value;
                     _bufferPtr += 8;
-                    _currentIndex += 8;
+                    CurrentIndex += 8;
 
                     break;
                 }
@@ -162,12 +162,12 @@ namespace Jetpack.Core
         {
             while (true)
             {
-                var newPos = _currentIndex + 4;
+                var newPos = CurrentIndex + 4;
                 if (newPos <= _bufferSize)
                 {
                     *(float*)_bufferPtr = value;
                     _bufferPtr += 4;
-                    _currentIndex += 4;
+                    CurrentIndex += 4;
 
                     break;
                 }
@@ -179,12 +179,15 @@ namespace Jetpack.Core
         {
             while (true)
             {
-                var newPos = _currentIndex + 4;
+                var newPos = CurrentIndex + 5;
                 if (newPos <= _bufferSize)
                 {
+                    *_bufferPtr = (byte)FieldType.Int;
+                    _bufferPtr++;
+
                     *(int*)_bufferPtr = value;
                     _bufferPtr += 4;
-                    _currentIndex += 4;
+                    CurrentIndex += 5;
 
                     break;
                 }
@@ -196,12 +199,12 @@ namespace Jetpack.Core
         {
             while (true)
             {
-                var newPos = _currentIndex + 4;
+                var newPos = CurrentIndex + 4;
                 if (newPos <= _bufferSize)
                 {
                     *(uint*)_bufferPtr = value;
                     _bufferPtr += 4;
-                    _currentIndex += 4;
+                    CurrentIndex += 4;
 
                     break;
                 }
@@ -213,12 +216,12 @@ namespace Jetpack.Core
         {
             while (true)
             {
-                var newPos = _currentIndex + 8;
+                var newPos = CurrentIndex + 8;
                 if (newPos <= _bufferSize)
                 {
                     *(long*)_bufferPtr = value;
                     _bufferPtr += 8;
-                    _currentIndex += 8;
+                    CurrentIndex += 8;
 
                     break;
                 }
@@ -230,12 +233,12 @@ namespace Jetpack.Core
         {
             while (true)
             {
-                var newPos = _currentIndex + 8;
+                var newPos = CurrentIndex + 8;
                 if (newPos <= _bufferSize)
                 {
                     *(ulong*)_bufferPtr = value;
                     _bufferPtr += 8;
-                    _currentIndex += 8;
+                    CurrentIndex += 8;
 
                     break;
                 }
@@ -247,12 +250,12 @@ namespace Jetpack.Core
         {
             while (true)
             {
-                var newPos = _currentIndex + 2;
+                var newPos = CurrentIndex + 2;
                 if (newPos <= _bufferSize)
                 {
                     *(short*)_bufferPtr = value;
                     _bufferPtr += 2;
-                    _currentIndex += 2;
+                    CurrentIndex += 2;
 
                     break;
                 }
@@ -264,12 +267,12 @@ namespace Jetpack.Core
         {
             while (true)
             {
-                var newPos = _currentIndex + 2;
+                var newPos = CurrentIndex + 2;
                 if (newPos <= _bufferSize)
                 {
                     *(ushort*)_bufferPtr = value;
                     _bufferPtr += 2;
-                    _currentIndex += 2;
+                    CurrentIndex += 2;
 
                     break;
                 }
@@ -281,12 +284,15 @@ namespace Jetpack.Core
         {
             while (true)
             {
-                var newPos = _currentIndex + 8;
+                var newPos = CurrentIndex + 9;
                 if (newPos <= _bufferSize)
                 {
+                    *_bufferPtr = (byte)FieldType.DateTime;
+                    _bufferPtr++;
+
                     *(long*)_bufferPtr = value.Ticks;
                     _bufferPtr += 8;
-                    _currentIndex += 8;
+                    CurrentIndex += 9;
 
                     break;
                 }
@@ -298,12 +304,15 @@ namespace Jetpack.Core
         {
             while (true)
             {
-                var newPos = _currentIndex + 16;
+                var newPos = CurrentIndex + 17;
                 if (newPos <= _bufferSize)
                 {
+                    *_bufferPtr = (byte)FieldType.Guid;
+                    _bufferPtr++;
+
                     *(Guid*)_bufferPtr = value;
                     _bufferPtr += 16;
-                    _currentIndex += 16;
+                    CurrentIndex += 17;
 
                     break;
                 }
@@ -328,6 +337,9 @@ namespace Jetpack.Core
 
         private bool WriteString(string value, out int charsWritten)
         {
+            *_bufferPtr = (byte)FieldType.String;
+            _bufferPtr++;
+
             fixed(char* charPtr = value)
             {
                 if(_encoder == null)
@@ -335,7 +347,7 @@ namespace Jetpack.Core
                     _encoder = Encoding.UTF8.GetEncoder();
                 }
 
-                _encoder.Convert(charPtr, value.Length, _bufferPtr, (_bufferSize - 1) - _currentIndex, false, out var charsUsed, out var bytesUsed, out var completed);
+                _encoder.Convert(charPtr, value.Length, _bufferPtr, (_bufferSize - 1) - CurrentIndex, false, out var charsUsed, out var bytesUsed, out var completed);
 
                 if(charsUsed == value.Length)
                 {
@@ -343,7 +355,7 @@ namespace Jetpack.Core
                 }
 
                 _bufferPtr += bytesUsed;
-                _currentIndex += bytesUsed;
+                CurrentIndex += bytesUsed;
                 charsWritten = charsUsed;
 
                 return completed;
@@ -361,7 +373,7 @@ namespace Jetpack.Core
                     _encoder = Encoding.UTF8.GetEncoder();
                 }
 
-                _encoder.Convert(charPtr, value.Length - startIndex, _bufferPtr, (_bufferSize - 1) - _currentIndex, false, out var charsUsed, out var bytesUsed, out var completed);
+                _encoder.Convert(charPtr, value.Length - startIndex, _bufferPtr, (_bufferSize - 1) - CurrentIndex, false, out var charsUsed, out var bytesUsed, out var completed);
 
                 if (charsUsed == (value.Length - startIndex))
                 {
@@ -369,7 +381,7 @@ namespace Jetpack.Core
                 }
 
                 _bufferPtr += bytesUsed;
-                _currentIndex += bytesUsed;
+                CurrentIndex += bytesUsed;
                 charsWritten = charsUsed;
 
                 return completed;
@@ -385,7 +397,7 @@ namespace Jetpack.Core
 
             _handle = GCHandle.Alloc(buffer, GCHandleType.Pinned);
             _bufferPtr = (byte*)_handle.AddrOfPinnedObject().ToPointer();
-            _currentIndex = 0;
+            CurrentIndex = 0;
         }
 
         public void Reset(byte* buffer)
@@ -397,13 +409,13 @@ namespace Jetpack.Core
 
             _handle = default(GCHandle);
             _bufferPtr = buffer;
-            _currentIndex = 0;
+            CurrentIndex = 0;
         }
 
         public void Reset()
         {
-            _bufferPtr -= _currentIndex;
-            _currentIndex = 0;
+            _bufferPtr -= CurrentIndex;
+            CurrentIndex = 0;
         }
 
         public void Dispose(bool disposing)
@@ -414,7 +426,7 @@ namespace Jetpack.Core
                 {
                     _handle.Free();
                 }
-                _flush(_buffer);
+                _flush(Buffer);
                 isDisposed = true;
             }
         }

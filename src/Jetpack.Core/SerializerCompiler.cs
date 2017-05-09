@@ -41,7 +41,6 @@ namespace Jetpack.Core
             var fieldSerializers = new List<Expression>();
             foreach(var field in fields)
             {
-                fieldSerializers.Add(WriteValue(writableBuffer, Expression.Constant((byte)TypeManifest[field.FieldType]), typeof(byte)));
                 fieldSerializers.Add(WriteValue(writableBuffer, Expression.Field(item, field), field.FieldType));
             }
 
