@@ -339,6 +339,7 @@ namespace Jetpack.Core
         {
             *_bufferPtr = (byte)FieldType.String;
             _bufferPtr++;
+            CurrentIndex++;
 
             fixed(char* charPtr = value)
             {

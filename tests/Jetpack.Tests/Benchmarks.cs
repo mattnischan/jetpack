@@ -36,11 +36,13 @@ namespace Jetpack.Tests
 
         private byte[] _buffer;
         private MemoryStream _stream;
+        private WritableBuffer _writer;
 
         public Benchmarks()
         {
             _buffer = new byte[1024];
             _stream = new MemoryStream(_buffer);
+            _writer = new WritableBuffer(_buffer, () => new byte[1024], buf => { });
         }
         
         [Benchmark(Baseline = true)]
@@ -54,6 +56,29 @@ namespace Jetpack.Tests
         public void SerializeJetpack()
         {
             JetpackSerializer.Serialize(_stream, _poco);
+            _stream.Seek(0, SeekOrigin.Begin);
+        }
+
+        [Benchmark]
+        public void SerializeJetpackRaw()
+        {
+            _writer.WriteValue(_poco.DateProp);
+            _writer.WriteValue(_poco.GuidProp);
+            _writer.WriteValue(_poco.IntProp);
+            _writer.WriteValue(_poco.StringProp);
+
+            _stream.Write(_writer.Buffer, 0, _writer.CurrentIndex);
+            _writer.Reset();
+            _stream.Seek(0, SeekOrigin.Begin);
+        }
+
+        [Benchmark]
+        public void SerializeJetpackExpression()
+        {
+            JetpackSerializer.Serializer<Poco>.WriteObject(_writer, _poco);
+
+            _stream.Write(_writer.Buffer, 0, _writer.CurrentIndex);
+            _writer.Reset();
             _stream.Seek(0, SeekOrigin.Begin);
         }
 

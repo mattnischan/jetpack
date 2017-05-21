@@ -13,7 +13,7 @@ namespace Jetpack.Core
                 () => ArrayPool<byte>.Shared.Rent(4096),
                 buffer => ArrayPool<byte>.Shared.Return(buffer)));
 
-        private static class Serializer<T>
+        public static class Serializer<T>
         {
             public static Action<WritableBuffer, T> WriteObject = SerializerCompiler.BuildAlphaSerializer<T>();
         }
