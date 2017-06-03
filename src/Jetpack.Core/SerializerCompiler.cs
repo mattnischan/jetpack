@@ -9,49 +9,40 @@ namespace Jetpack.Core
 {
     public static class SerializerCompiler
     {
-        public static Dictionary<Type, FieldType> TypeManifest = new Dictionary<Type, FieldType>()
+        public static Action<WritableBuffer, object> BuildAlphaSerializer(Type type)
         {
-            { typeof(bool), FieldType.Bool },
-            { typeof(byte), FieldType.Byte },
-            { typeof(sbyte), FieldType.SByte },
-            { typeof(char), FieldType.Char },
-            { typeof(decimal), FieldType.Decimal },
-            { typeof(double), FieldType.Double },
-            { typeof(float), FieldType.Float },
-            { typeof(int), FieldType.Int },
-            { typeof(uint), FieldType.UInt },
-            { typeof(long), FieldType.Long },
-            { typeof(ulong), FieldType.ULong },
-            { typeof(short), FieldType.Short },
-            { typeof(ushort), FieldType.UShort },
-            { typeof(string), FieldType.String },
-            { typeof(DateTime), FieldType.DateTime },
-            { typeof(Guid), FieldType.Guid }
-        };
-
-        public static Action<WritableBuffer, T> BuildAlphaSerializer<T>()
-        {
-            var fields = typeof(T).GetRuntimeFields()
+            var fields = type.GetRuntimeFields()
                 .Where(x => x.IsPublic || x.IsPrivate || x.IsInitOnly)
                 .OrderBy(x => x.Name);
 
             var writableBuffer = Expression.Parameter(typeof(WritableBuffer), "buffer");
-            var item = Expression.Parameter(typeof(T), "item");
+            var param = Expression.Parameter(typeof(object), "obj");
+            var item = Expression.Variable(type, "item");
 
             var fieldSerializers = new List<Expression>();
+            fieldSerializers.Add(Expression.Assign(item, Expression.Convert(param, type)));
             foreach(var field in fields)
             {
                 fieldSerializers.Add(WriteValue(writableBuffer, Expression.Field(item, field), field.FieldType));
             }
 
-            var expression = Expression.Lambda<Action<WritableBuffer, T>>(Expression.Block(fieldSerializers), new[] { writableBuffer, item });
+            var expression = Expression.Lambda<Action<WritableBuffer, object>>(Expression.Block(new[] { item }, fieldSerializers), new[] { writableBuffer, param });
             return expression.Compile();
         }
 
         public static Expression WriteValue(Expression writableBuffer, Expression field, Type valueType)
         {
-            var writeValueMethod = typeof(WritableBuffer)
-                .GetRuntimeMethod("WriteValue", new[] { valueType });
+            MethodInfo writeValueMethod;
+            if(TypeManifest.FieldTypes.ContainsKey(valueType))
+            {
+                writeValueMethod = typeof(WritableBuffer)
+                    .GetRuntimeMethod("WriteValue", new[] { valueType });
+            }
+            else
+            {
+                writeValueMethod = typeof(WritableBuffer)
+                    .GetRuntimeMethod("WriteObjectHeader", new[] { typeof(object) });
+            }
 
             return Expression.Call(writableBuffer, writeValueMethod, new[] { field });
         }

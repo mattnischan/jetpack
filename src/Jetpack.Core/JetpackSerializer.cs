@@ -1,29 +1,34 @@
 ﻿using System;
 using System.Buffers;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.IO;
 using System.Text;
+using System.Threading;
 
 namespace Jetpack.Core
 {
     public static class JetpackSerializer
     {
-        public static readonly SerializerPool _serializerPool =
-            new SerializerPool(() => new WritableBuffer(ArrayPool<byte>.Shared.Rent(4096),
+        public static readonly ConcurrentObjectPool<WritableBuffer> _serializerPool =
+            new ConcurrentObjectPool<WritableBuffer>(() => new WritableBuffer(ArrayPool<byte>.Shared.Rent(4096),
                 () => ArrayPool<byte>.Shared.Rent(4096),
-                buffer => ArrayPool<byte>.Shared.Return(buffer)));
+                buffer => ArrayPool<byte>.Shared.Return(buffer)), 16);
 
-        public static class Serializer<T>
-        {
-            public static Action<WritableBuffer, T> WriteObject = SerializerCompiler.BuildAlphaSerializer<T>();
-        }
+        private static object _syncroot = new object();
+
+        private static SpinLock _lock = new SpinLock();
 
         public static void Serialize<T>(Stream stream, T value)
         {
+            var serializer = SerializerCollection.Get(typeof(T));
+
             var writer = _serializerPool.Rent();
-            Serializer<T>.WriteObject(writer, value);
+            serializer(writer, value);
 
             stream.Write(writer.Buffer, 0, writer.CurrentIndex);
+            writer.Reset();
             _serializerPool.Return(writer);
         }
     }

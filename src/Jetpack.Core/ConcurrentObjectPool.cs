@@ -5,19 +5,34 @@ using System.Threading;
 
 namespace Jetpack.Core
 {
-    public class SerializerPool
+    /// <summary>
+    /// A lock-free object pool.
+    /// </summary>
+    public class ConcurrentObjectPool<T>
     {
-        private WritableBuffer[] _pool;
+        /// <summary>
+        /// The pool of items.
+        /// </summary>
+        private T[] _pool;
 
+        /// <summary>
+        /// The pool's current item slot.
+        /// </summary>
         private int _currentSlot;
 
-        private readonly object _syncroot = new object();
+        /// <summary>
+        /// A factory that creates instances of the items.
+        /// </summary>
+        private readonly Func<T> _factory;
 
-        private readonly Func<WritableBuffer> _factory;
-
-        public SerializerPool(Func<WritableBuffer> factory)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="factory"></param>
+        /// <param name="itemLimit"></param>
+        public ConcurrentObjectPool(Func<T> factory, int itemLimit)
         {
-            _pool = new WritableBuffer[Environment.ProcessorCount * 2];
+            _pool = new T[itemLimit];
 
             for(var i = 0; i < _pool.Length; i++)
             {
@@ -28,7 +43,11 @@ namespace Jetpack.Core
             _factory = factory;
         }
 
-        public WritableBuffer Rent()
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        public T Rent()
         {
             var currentSlot = _currentSlot;
             if(currentSlot == 0)
@@ -59,7 +78,11 @@ namespace Jetpack.Core
             }
         }
 
-        public void Return(WritableBuffer writer)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="writer"></param>
+        public void Return(T writer)
         {
             var currentSlot = _currentSlot;
             if(currentSlot == _pool.Length - 1)

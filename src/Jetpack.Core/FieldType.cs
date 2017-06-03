@@ -22,6 +22,8 @@ namespace Jetpack.Core
         String,
         DateTime,
         Guid,
+        CollectionStart,
+        CollectionEnd,
         Object
     }
 }

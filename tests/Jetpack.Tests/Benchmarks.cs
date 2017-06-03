@@ -37,6 +37,7 @@ namespace Jetpack.Tests
         private byte[] _buffer;
         private MemoryStream _stream;
         private WritableBuffer _writer;
+        private Action<WritableBuffer, object> _serializer = SerializerCompiler.BuildAlphaSerializer(typeof(Poco));
 
         public Benchmarks()
         {
@@ -59,7 +60,7 @@ namespace Jetpack.Tests
             _stream.Seek(0, SeekOrigin.Begin);
         }
 
-        [Benchmark]
+        //[Benchmark]
         public void SerializeJetpackRaw()
         {
             _writer.WriteValue(_poco.DateProp);
@@ -72,10 +73,10 @@ namespace Jetpack.Tests
             _stream.Seek(0, SeekOrigin.Begin);
         }
 
-        [Benchmark]
+        //[Benchmark]
         public void SerializeJetpackExpression()
         {
-            JetpackSerializer.Serializer<Poco>.WriteObject(_writer, _poco);
+            _serializer(_writer, _poco);
 
             _stream.Write(_writer.Buffer, 0, _writer.CurrentIndex);
             _writer.Reset();

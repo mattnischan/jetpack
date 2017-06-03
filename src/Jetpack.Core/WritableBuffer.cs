@@ -54,7 +54,7 @@ namespace Jetpack.Core
 
             var oldBuffer = Buffer;
             Reset(newBuffer);
-            _flush(Buffer);
+            _flush(oldBuffer);
         }
 
         public void WriteValue(bool value)
@@ -335,11 +335,38 @@ namespace Jetpack.Core
             }
         }
 
+        public void WriteObjectHeader(object obj)
+        {
+            var type = obj.GetType();
+            if(TypeManifest.FieldTypes.TryGetValue(type, out var fieldType))
+            {
+                WriteValue((byte)fieldType);
+            }
+            else
+            {
+                WriteValue((byte)FieldType.Object);
+                WriteValue(type.FullName);
+            }
+        }
+
         private bool WriteString(string value, out int charsWritten)
         {
-            *_bufferPtr = (byte)FieldType.String;
-            _bufferPtr++;
-            CurrentIndex++;
+            while (true)
+            {
+                var newPos = CurrentIndex + 5;
+                if (newPos <= _bufferSize)
+                {
+                    *_bufferPtr = (byte)FieldType.String;
+                    _bufferPtr++;
+
+                    *(int*)_bufferPtr = value.Length;
+                    _bufferPtr += 4;
+                    CurrentIndex += 5;
+
+                    break;
+                }
+                Allocate();
+            }
 
             fixed(char* charPtr = value)
             {
